@@ -1,0 +1,126 @@
+```{r}
+library(ggplot2)
+library(dplyr)
+
+air_pollution_df <- read.csv('/mnt/data/global_air_pollution_dataset.csv')
+lung_cancer_df <- read.csv('/mnt/data/lung_cancer_prediction_dataset.csv')
+
+# Part 3 - 1
+ggplot(lung_cancer_df, aes(y = Cancer.Diagnosis)) +
+  geom_boxplot(fill = "skyblue", color = "black") +
+  ggtitle("Boxplot of Lung Cancer Deaths Distribution") +
+  ylab("Lung Cancer Cases") +
+  theme_minimal()
+
+# Part 3 - 2
+ggplot(air_pollution_df, aes(x = PM2.5.AQI.Value)) +
+  geom_histogram(binwidth = 10, fill = "purple", color = "black", alpha = 0.7) +
+  ggtitle("Histogram of PM2.5 AQI Values") +
+  xlab("PM2.5 AQI Value") +
+  ylab("Frequency") +
+  theme_minimal()
+
+# Part 3 - 3
+ggplot(lung_cancer_df, aes(x = Cancer.Diagnosis)) +
+  geom_density(fill = "red", alpha = 0.5) +
+  ggtitle("Density Plot of Lung Cancer Mortality Rate") +
+  xlab("Lung Cancer Cases") +
+  ylab("Density") +
+  theme_minimal()
+
+# Part 3 - 4
+set.seed(42)
+normal_values <- rnorm(100)
+logistic_values <- rlogis(100)
+data <- data.frame(Normal = normal_values, Logistic = logistic_values)
+
+ggplot(data, aes(x = Normal, y = Logistic)) +
+  geom_point(color = "brown", alpha = 0.6) +
+  ggtitle("Scatter Plot of Normal vs Logistic Distributions") +
+  xlab("Normal Distribution") +
+  ylab("Logistic Distribution") +
+  theme_solarized(light = FALSE)
+
+
+library(ggplot2)
+library(dplyr)
+
+# Load datasets
+air_pollution_df <- read.csv('/mnt/data/global_air_pollution_dataset.csv')
+lung_cancer_df <- read.csv('/mnt/data/lung_cancer_prediction_dataset.csv')
+
+# Part 3 - 1: Boxplot of Lung Cancer Deaths Distribution
+ggplot(lung_cancer_df, aes(y = Cancer.Diagnosis)) +
+  geom_boxplot(fill = "skyblue", color = "black") +
+  ggtitle("Boxplot of Lung Cancer Deaths Distribution") +
+  ylab("Lung Cancer Cases") +
+  theme_minimal()
+
+# Part 3 - 2: Histogram of PM2.5 AQI Values
+ggplot(air_pollution_df, aes(x = PM2.5.AQI.Value)) +
+  geom_histogram(binwidth = 10, fill = "purple", color = "black", alpha = 0.7) +
+  ggtitle("Histogram of PM2.5 AQI Values") +
+  xlab("PM2.5 AQI Value") +
+  ylab("Frequency") +
+  theme_minimal()
+
+# Part 3 - 3: Density Plot of Lung Cancer Mortality Rate
+ggplot(lung_cancer_df, aes(x = Cancer.Diagnosis)) +
+  geom_density(fill = "red", alpha = 0.5) +
+  ggtitle("Density Plot of Lung Cancer Mortality Rate") +
+  xlab("Lung Cancer Cases") +
+  ylab("Density") +
+  theme_minimal()
+
+# Part 3 - 4: Scatter Plot of Normal vs Logistic Distributions
+set.seed(42)
+normal_values <- rnorm(100)
+logistic_values <- rlogis(100)
+data <- data.frame(Normal = normal_values, Logistic = logistic_values)
+
+ggplot(data, aes(x = Normal, y = Logistic)) +
+  geom_point(color = "brown", alpha = 0.6) +
+  ggtitle("Scatter Plot of Normal vs Logistic Distributions") +
+  xlab("Normal Distribution") +
+  ylab("Logistic Distribution") +
+  theme_solarized(light = FALSE)
+
+# Part 4 - 1: Recreate Histogram with KDE using Matplotlib
+ggplot(air_pollution_df, aes(x = PM2.5.AQI.Value)) +
+  geom_histogram(aes(y = ..density..), binwidth = 10, fill = "blue", color = "black", alpha = 0.7) +
+  geom_density(color = "red", size = 1) +
+  ggtitle("PM2.5 AQI Distribution with Density Overlay") +
+  xlab("PM2.5 AQI Value") +
+  ylab("Density") +
+  theme_minimal()
+
+# Part 4 - 2: PM2.5 AQI vs. Annual Lung Cancer Deaths Scatter Plot
+ggplot(lung_cancer_df, aes(x = PM2.5.AQI.Value, y = Annual_Lung_Cancer_Deaths, color = Country)) +
+  geom_point() +
+  ggtitle("PM2.5 AQI vs. Annual Lung Cancer Deaths") +
+  xlab("PM2.5 AQI Value") +
+  ylab("Annual Lung Cancer Deaths") +
+  theme_minimal()
+
+# Part 4 - 3: Lung Cancer Stage vs. Smoking Years using geom_jitter
+ggplot(lung_cancer_df, aes(x = Gender, y = Years_of_Smoking, color = Gender)) +
+  geom_jitter(alpha = 0.6) +
+  scale_color_manual(values = c("#5469f1", "#d554f1")) +
+  ggtitle("Lung Cancer Stage vs. Smoking Years") +
+  xlab("Gender") +
+  ylab("Years of Smoking") +
+  theme_minimal()
+
+# Part 4 - 4: PM2.5 AQI Distribution Across Countries using Facet Wrap
+ggplot(air_pollution_df, aes(x = PM2.5.AQI.Value, fill = Country)) +
+  geom_histogram(binwidth = 10, color = "black", alpha = 0.7) +
+  facet_wrap(~ Country) +
+  scale_fill_viridis_d(option = "plasma") +
+  ggtitle("PM2.5 AQI Distribution Across Countries") +
+  xlab("PM2.5 AQI Value") +
+  ylab("Frequency") +
+  theme_minimal()
+
+
+
+```
