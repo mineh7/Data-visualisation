@@ -1,0 +1,220 @@
+---
+title: "Data Visualization Homework 4"
+author: "Mineh Nazarian"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(janitor)
+library(reshape2)
+library(ggthemes)
+library(viridis)
+library(gridExtra)
+
+# Load and clean data
+bundesliga <- read_csv("bundesliga.csv") %>%
+  clean_names()
+
+# Manually create 'ftr' column
+bundesliga <- bundesliga %>%
+  mutate(ftr = case_when(
+    fthg > ftag ~ "H",
+    fthg < ftag ~ "A",
+    fthg == ftag ~ "D",
+    TRUE ~ "-"
+  ))
+
+bundesliga2 <- read_csv("bundesliga2.csv") %>%
+  clean_names()
+```
+
+
+```{r setup, include=FALSE}
+# Create FTR manually since I was getting errors
+
+bundesliga <- read_csv("bundesliga.csv") %>% clean_names()
+bundesliga2 <- read_csv("bundesliga2.csv") %>% clean_names()
+```
+
+# Part 1: Trend Analysis
+
+## 1. Total and Average Goals Per Season
+
+```{r}
+goal_stats <- bundesliga %>%
+  group_by(season) %>%
+  summarise(
+    total_goals = sum(fthg + ftag, na.rm = TRUE),
+    matches = n(),
+    avg_goals_per_match = total_goals / matches
+  )
+
+ggplot(goal_stats, aes(x = season)) +
+  geom_line(aes(y = total_goals), color = "blue", size = 1.2) +
+  geom_line(aes(y = avg_goals_per_match * 100), color = "red", size = 1.2) +
+  labs(title = "Total and Average Goals per Season",
+       subtitle = "Red line scaled x100 for average goals per match",
+       y = "Goals / Avg * 100", x = "Season")
+```
+
+**Interpretation:**  
+This chart shows total goals in blue and average goals per match in red (scaled ×100) for better comparison. You can observe how scoring intensity changed over the years.
+
+## 2. Goal Distribution Per Match
+
+```{r}
+bundesliga <- bundesliga %>%
+  mutate(goals = fthg + ftag)
+
+season_avg <- bundesliga %>%
+  group_by(season) %>%
+  summarise(avg_goals = mean(goals, na.rm = TRUE))
+
+bundesliga <- bundesliga %>%
+  left_join(season_avg, by = "season") %>%
+  mutate(over_under = ifelse(avg_goals > 2.5, "Over", "Under"))
+
+ggplot(bundesliga, aes(x = goals, fill = over_under)) +
+  geom_histogram(binwidth = 1, position = "identity", alpha = 0.7) +
+  facet_wrap(~season, scales = "free_y") +
+  labs(title = "Goal Distribution per Match by Season",
+       fill = "Avg > 2.5 Goals") +
+  theme_minimal()
+```
+
+**Interpretation:**  
+This shows the distribution of goals per match each season, color-coded by whether the average exceeded 2.5 goals.
+
+## 3. Team Goal Trends per Season (Highlight Bayern Munchen)
+
+```{r}
+pdf("season_goal_trends.pdf", width = 10, height = 6)
+
+unique_seasons <- unique(bundesliga$season)
+
+for (s in unique_seasons) {
+  season_data <- bundesliga %>%
+    filter(season == s) %>%
+    group_by(team = hometeam) %>%
+    summarise(goals = sum(fthg, na.rm = TRUE))
+
+  gg <- ggplot(season_data, aes(x = team, y = goals, group = 1)) +
+    geom_line(color = "grey") +
+    geom_point(data = subset(season_data, team == "Bayern Munchen"),
+               aes(x = team, y = goals), color = "red", size = 3) +
+    labs(title = paste("Goals Scored by Teams in Season", s),
+         subtitle = paste("Total goals:", sum(season_data$goals)),
+         caption = paste("Bayern Munchen goals:", season_data$goals[season_data$team == "Bayern Munchen"])) +
+    theme(axis.text.x = element_text(angle = 90))
+  print(gg)
+}
+
+dev.off()
+```
+
+**Interpretation:**  
+This saves a PDF file with per-season goal trends for all teams, highlighting Bayern Munchen in red.
+
+## 4. Heatmap of Home vs. Away Wins
+
+```{r}
+heatmap_data <- bundesliga %>%
+  filter(ftr %in% c("H", "A")) %>%
+  mutate(result = ifelse(ftr == "H", hometeam, awayteam)) %>%
+  group_by(season, result) %>%
+  summarise(wins = n()) %>%
+  pivot_wider(names_from = season, values_from = wins, values_fill = 0)
+
+heatmap_matrix <- as.matrix(heatmap_data[,-1])
+rownames(heatmap_matrix) <- heatmap_data$result
+
+heatmap(heatmap_matrix, scale = "none", col = viridis(256), margins = c(5,10))
+```
+
+**Interpretation:**  
+Heatmap showing how many home/away wins each team had across seasons.
+
+
+# Part 5: Overall Performance (R - Total Points)
+
+```{r}
+bundesliga <- bundesliga %>%
+  mutate(
+    home_points = case_when(
+      ftr == "H" ~ 3,
+      ftr == "D" ~ 1,
+      TRUE ~ 0
+    ),
+    away_points = case_when(
+      ftr == "A" ~ 3,
+      ftr == "D" ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+home_points_df <- bundesliga %>%
+  group_by(season, team = hometeam) %>%
+  summarise(points = sum(home_points, na.rm = TRUE), .groups = "drop")
+
+away_points_df <- bundesliga %>%
+  group_by(season, team = awayteam) %>%
+  summarise(points = sum(away_points, na.rm = TRUE), .groups = "drop")
+
+total_points <- bind_rows(home_points_df, away_points_df) %>%
+  group_by(season, team) %>%
+  summarise(total_points = sum(points), .groups = "drop")
+
+unique_teams <- unique(total_points$team)
+team_colors <- setNames(rainbow(length(unique_teams)), unique_teams)
+
+pdf("r_total_points_per_team.pdf", width = 10, height = 6)
+for (s in unique(total_points$season)) {
+  season_data <- total_points %>% filter(season == s) %>% arrange(total_points)
+  bar_colors <- team_colors[season_data$team]
+  barplot(
+    season_data$total_points,
+    names.arg = season_data$team,
+    las = 2,
+    col = bar_colors,
+    main = paste("Total Points -", s),
+    ylab = "Points"
+  )
+}
+dev.off()
+```
+
+# Part 6: Monte Carlo Simulation (R)
+
+```{r}
+set.seed(42)
+
+simulate_goals_r <- function(mean_goals, seasons = 10, reps = 1000) {
+  replicate(reps, sum(rpois(seasons, lambda = mean_goals)))
+}
+
+team_avg_goals <- bundesliga %>%
+  filter(hometeam %in% c("Bayern Munich", "Dortmund", "Leverkusen")) %>%
+  group_by(hometeam) %>%
+  summarise(mean_goals = mean(fthg, na.rm = TRUE))
+
+sim_results <- lapply(team_avg_goals$mean_goals, simulate_goals_r)
+names(sim_results) <- team_avg_goals$hometeam
+
+boxplot(
+  sim_results,
+  names = names(sim_results),
+  main = "Monte Carlo Simulation: Next 10 Seasons",
+  ylab = "Total Simulated Goals",
+  col = c("red", "blue", "green")
+)
+
+
+
+```
+
